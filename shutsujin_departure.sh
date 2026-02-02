@@ -69,41 +69,6 @@ if [ -f "./config/settings.yaml" ]; then
     ' ./config/settings.yaml)
 fi
 
-# ============================================================
-# プロジェクトパス取得（config/projects.yaml の current_project）
-# ============================================================
-get_current_project_path() {
-    local cfg="./config/projects.yaml"
-    [ -f "$cfg" ] || return
-
-    local current_id=""
-    current_id=$(awk -F': ' '/^current_project:/ {print $2; exit}' "$cfg")
-    current_id="${current_id//\"/}"
-    if [ -z "$current_id" ]; then
-        return
-    fi
-
-    awk -v id="$current_id" '
-        $1 == "-" && $2 == "id:" {cur=$3; gsub(/"/, "", cur)}
-        $1 == "path:" && cur == id {
-            val=$2
-            sub(/^"/, "", val)
-            sub(/"$/, "", val)
-            print val
-            exit
-        }
-    ' "$cfg"
-}
-
-PROJECT_PATH="$(get_current_project_path)"
-if [ -z "$PROJECT_PATH" ]; then
-    PROJECT_PATH="$SCRIPT_DIR"
-fi
-if [ ! -d "$PROJECT_PATH" ]; then
-    echo -e "\033[1;33m【報】\033[0m ⚠️  current_project の path が見つからないため、${SCRIPT_DIR} を使用します"
-    PROJECT_PATH="$SCRIPT_DIR"
-fi
-
 # 色付きログ関数（戦国風）
 log_info() {
     echo -e "\033[1;33m【報】\033[0m $1"
@@ -597,7 +562,7 @@ for i in {0..8}; do
     if [ "$i" -ne 0 ]; then
         worker_id="ashigaru${i}"
     fi
-    tmux send-keys -t "multiagent:0.$i" "export SHOGUN_HOME=\"${SCRIPT_DIR}\" SHOGUN_PROJECT_ROOT=\"${PROJECT_PATH}\" SHOGUN_WORKER_ID=\"${worker_id}\"; cd \"${PROJECT_PATH}\" && export PS1='${PROMPT_STR}' && clear" Enter
+    tmux send-keys -t "multiagent:0.$i" "cd \"$(pwd)\" && export PS1='${PROMPT_STR}' && clear" Enter
 done
 
 log_success "  └─ 家老・足軽の陣、構築完了"
@@ -623,7 +588,7 @@ if ! tmux new-session -d -s shogun 2>/dev/null; then
     exit 1
 fi
 SHOGUN_PROMPT=$(generate_prompt "将軍" "magenta" "$SHELL_SETTING")
-tmux send-keys -t shogun "export SHOGUN_HOME=\"${SCRIPT_DIR}\" SHOGUN_PROJECT_ROOT=\"${PROJECT_PATH}\" SHOGUN_WORKER_ID=\"shogun\"; cd \"${PROJECT_PATH}\" && export PS1='${SHOGUN_PROMPT}' && clear" Enter
+tmux send-keys -t shogun "cd \"$(pwd)\" && export PS1='${SHOGUN_PROMPT}' && clear" Enter
 tmux select-pane -t shogun:0.0 -P 'bg=#002b36'  # 将軍の Solarized Dark
 
 log_success "  └─ 将軍の本陣、構築完了"

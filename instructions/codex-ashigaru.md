@@ -45,7 +45,7 @@ workflow:
     source: $SHOGUN_HOME/queue/tasks/ashigaru{N}.yaml
   - step: 2
     action: read_context
-    files: ["$SHOGUN_HOME/CLAUDE.md", "$SHOGUN_HOME/memory/global_context.md", "対象ファイル"]
+    files: ["$SHOGUN_HOME/AGENTS.md", "$SHOGUN_HOME/memory/global_context.md", "対象ファイル"]
   - step: 3
     action: execute_task
     note: "実際のファイル編集・コマンド実行"
@@ -73,7 +73,7 @@ startup_required:
     note: "自分のタスクファイルのみ読む"
   - action: read_context_files
     files:
-      - $SHOGUN_HOME/CLAUDE.md
+      - $SHOGUN_HOME/AGENTS.md
       - $SHOGUN_HOME/memory/global_context.md
 
 # 出力形式
@@ -145,7 +145,7 @@ codex_specific:
 | **karo_to_ashigaru.yamlを書き換え** | 家老の管理を破壊 | 読み取り専用 |
 | **将軍に直接報告** | 指揮系統の混乱 | 家老経由で報告 |
 | **ポーリング（待機ループ）** | API代金が嵩む | 家老からの通知を待つ |
-| **コンテキストを読まずに作業開始** | 品質低下・エラー | 必ず$SHOGUN_HOME/CLAUDE.md（システム概要）と$SHOGUN_HOME/memory/global_context.md（存在すれば）を読む |
+| **コンテキストを読まずに作業開始** | 品質低下・エラー | 必ず$SHOGUN_HOME/AGENTS.md（システム概要）と$SHOGUN_HOME/memory/global_context.md（存在すれば）を読む |
 | **承認なしで破壊的操作を実行** | 事故防止 | rm -rf、force push等は承認を求める |
 
 ## 足軽の責務
@@ -160,7 +160,7 @@ codex_specific:
 - タスク内容、要件、制約を理解
 
 ### 3. コンテキストを読む
-- $SHOGUN_HOME/CLAUDE.md（システム概要）を読み込む
+- $SHOGUN_HOME/AGENTS.md（システム概要）を読み込む
 - $SHOGUN_HOME/memory/global_context.md（存在すれば）を読む
 - 対象ファイルを確認
 
@@ -264,7 +264,7 @@ skill_candidate:
 1. **自分の役割に対応する instructions を読め**: instructions/codex-ashigaru.md
 2. **自分のIDを確認**: `echo $SHOGUN_WORKER_ID`（未設定なら `tmux display-message -p '#{pane_title}'`）
 3. **自分のタスクファイルを確認**: $SHOGUN_HOME/queue/tasks/ashigaru{N}.yaml
-4. **$SHOGUN_HOME/CLAUDE.md（システム概要）と memory/global_context.md を読み込め**: システム全体の構成を理解（存在すれば）
+4. **$SHOGUN_HOME/AGENTS.md（システム概要）と memory/global_context.md を読み込め**: システム全体の構成を理解（存在すれば）
 5. **禁止事項を確認してから作業開始**
 
 ## コンパクション復帰時の必須行動
@@ -318,7 +318,7 @@ skill_candidate:
 - [ ] 自分のID（ashigaru{N}）を確認
 - [ ] 指示書（このファイル）を読んだ
 - [ ] 自分のタスクファイル（tasks/ashigaru{N}.yaml）を確認
-- [ ] $SHOGUN_HOME/CLAUDE.md（システム概要）とmemory/global_context.mdを読んだ（存在すれば）
+- [ ] $SHOGUN_HOME/AGENTS.md（システム概要）とmemory/global_context.mdを読んだ（存在すれば）
 - [ ] 禁止事項を理解した
 - [ ] 他の足軽のタスクを誤って実行していない
 - [ ] skill_candidateの報告準備ができている

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Multi-Agent Orchestration System for Claude Code**
+**Multi-Agent Orchestration System for Claude Code / Codex**
 
 *One command. Eight AI agents working in parallel.*
 
@@ -18,7 +18,7 @@
 
 ## What is this?
 
-**multi-agent-shogun** is a system that runs multiple Claude Code instances simultaneously, organized like a feudal Japanese army.
+**multi-agent-shogun** is a system that runs multiple Claude Code or Codex instances simultaneously, organized like a feudal Japanese army.
 
 **Why use this?**
 - Give one command, get 8 AI workers executing in parallel
@@ -186,8 +186,8 @@ Then restart your computer and run `install.bat` again.
 | Script | Purpose | When to Run |
 |--------|---------|-------------|
 | `install.bat` | Windows: WSL2 + Ubuntu setup | First time only |
-| `first_setup.sh` | Installs tmux, Node.js, Claude Code CLI + configures Memory MCP | First time only |
-| `shutsujin_departure.sh` | Creates tmux sessions + starts Claude Code + loads instructions | Every day |
+| `first_setup.sh` | Installs tmux, Node.js, Claude Code/Codex CLI + configures Memory MCP | First time only |
+| `shutsujin_departure.sh` | Creates tmux sessions + starts Claude Code/Codex + loads instructions | Every day |
 
 ### What `install.bat` does automatically:
 - ✅ Checks if WSL2 is installed (auto-install if missing)
@@ -196,7 +196,7 @@ Then restart your computer and run `install.bat` again.
 
 ### What `shutsujin_departure.sh` does:
 - ✅ Creates tmux sessions (shogun + multiagent)
-- ✅ Launches Claude Code on all agents
+- ✅ Launches Claude Code or Codex on all agents
 - ✅ Automatically loads instruction files for each agent
 - ✅ Resets queue files for a fresh start
 
@@ -218,6 +218,7 @@ If you prefer to install dependencies manually:
 | tmux | `sudo apt install tmux` | Terminal multiplexer |
 | Node.js v20+ | `nvm install 20` | Required for Claude Code CLI |
 | Claude Code CLI | `npm install -g @anthropic-ai/claude-code` | Anthropic's official CLI |
+| Codex CLI (optional) | `npm install -g @openai/codex` | Use when `config/settings.yaml` → `agent: codex` |
 
 </details>
 
@@ -605,10 +606,10 @@ language: en   # Japanese + English translation
 <summary><b>shutsujin_departure.sh Options</b> (Click to expand)</summary>
 
 ```bash
-# Default: Full startup (tmux sessions + Claude Code launch)
+# Default: Full startup (tmux sessions + Claude Code/Codex launch)
 ./shutsujin_departure.sh
 
-# Session setup only (without launching Claude Code)
+# Session setup only (without launching Claude Code/Codex)
 ./shutsujin_departure.sh -s
 ./shutsujin_departure.sh --setup-only
 
@@ -639,6 +640,10 @@ tmux attach-session -t shogun     # Connect to give commands
 # Manually start Claude Code on specific agents
 tmux send-keys -t shogun:0 'claude --dangerously-skip-permissions' Enter
 tmux send-keys -t multiagent:0.0 'claude --dangerously-skip-permissions' Enter
+
+# Manually start Codex on specific agents
+tmux send-keys -t shogun:0 'codex --dangerously-bypass-approvals-and-sandbox' Enter
+tmux send-keys -t multiagent:0.0 'codex --dangerously-bypass-approvals-and-sandbox' Enter
 ```
 
 **Restart After Crash:**
@@ -701,7 +706,7 @@ multi-agent-shogun/
 │
 ├── memory/                   # Memory MCP storage
 ├── dashboard.md              # Real-time status overview
-└── CLAUDE.md                 # Project context for Claude
+└── AGENTS.md                 # Project context (Codex/Claude)
 ```
 
 </details>

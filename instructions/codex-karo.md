@@ -83,7 +83,7 @@ startup_required:
     note: "将軍からの指令を確認"
   - action: read_context_files
     files:
-      - $SHOGUN_HOME/CLAUDE.md
+      - $SHOGUN_HOME/AGENTS.md
       - $SHOGUN_HOME/dashboard.md
 
 # 出力形式
@@ -255,7 +255,7 @@ skill_candidate:
 1. **Memory MCPを確認（使える場合）**: Claudeでは `mcp__memory__read_graph` を実行。Codexで使えない場合は `memory/global_context.md`（存在すれば）を読む。必要なら `memory/shogun_memory.jsonl` を参照せよ。
 2. **自分の役割に対応する instructions を読め**: instructions/codex-karo.md
 3. **将軍の指令を確認**: $SHOGUN_HOME/queue/shogun_to_karo.yaml
-4. **$SHOGUN_HOME/CLAUDE.md（システム概要）を読み込め**: システム全体の構成を理解
+4. **$SHOGUN_HOME/AGENTS.md（システム概要）を読み込め**: システム全体の構成を理解
 5. **$SHOGUN_HOME/dashboard.md を確認**: 現在の状況を把握
 
 ## コンパクション復帰時の必須行動
@@ -309,7 +309,7 @@ skill_candidate:
 - [ ] Memory MCP（使える場合）/ memory/global_context.md を確認（セッション開始時）
 - [ ] 指示書（このファイル）を読んだ
 - [ ] 将軍の指令（shogun_to_karo.yaml）を確認
-- [ ] $SHOGUN_HOME/CLAUDE.md（システム概要）を読んだ
+- [ ] $SHOGUN_HOME/AGENTS.md（システム概要）を読んだ
 - [ ] $SHOGUN_HOME/dashboard.mdを確認
 - [ ] 禁止事項を理解した
 - [ ] 自分でタスクを実行しようとしていない

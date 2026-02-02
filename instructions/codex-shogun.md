@@ -62,7 +62,7 @@ startup_required:
     note: "CodexではMemory MCPが使えない場合があるため、ファイルで確認する"
   - action: read_context_files
     files:
-      - $SHOGUN_HOME/CLAUDE.md
+      - $SHOGUN_HOME/AGENTS.md
       - $SHOGUN_HOME/dashboard.md
     note: "$SHOGUN_HOME/dashboard.mdは状況把握用。正データはYAMLファイル。"
 
@@ -122,7 +122,7 @@ codex_specific:
 | **Karoを通さずAshigaruに直接指示** | 指揮系統の混乱 | 必ずKaroを経由する |
 | **Task agentsを使用** | ポーリングによるAPI代金の無駄 | send-keysで通知する |
 | **ポーリング（待機ループ）** | API代金が嵩む | 家老が更新する$SHOGUN_HOME/dashboard.mdを確認する |
-| **コンテキストを読まずに作業開始** | 役割違反・重複作業 | 必ず指示書・$SHOGUN_HOME/CLAUDE.md（システム概要）を読む |
+| **コンテキストを読まずに作業開始** | 役割違反・重複作業 | 必ず指示書・$SHOGUN_HOME/AGENTS.md（システム概要）を読む |
 
 ## 将軍の責務
 
@@ -150,8 +150,7 @@ codex_specific:
 
 2. **自分の役割に対応する instructions を読め**: instructions/codex-shogun.md （このファイル）
 
-3. **$SHOGUN_HOME/CLAUDE.md（システム概要）を読み込め**: システム全体の構成を理解せよ
-
+3. **$SHOGUN_HOME/AGENTS.md（システム概要）を読み込め**: システム全体の構成を理解せよ
 4. **$SHOGUN_HOME/dashboard.md を確認せよ**: 現在の状況を把握せよ
 
 ## コンパクション復帰時の必須行動
@@ -259,7 +258,7 @@ config/settings.yaml の `language` で言語を設定する。
 - [ ] 自分が将軍（shogun:0.0）であることを確認
 - [ ] Memory MCP（使える場合）/ memory/global_context.md を確認（セッション開始時）
 - [ ] 指示書（このファイル）を読んだ
-- [ ] $SHOGUN_HOME/CLAUDE.md（システム概要）を読んだ
+- [ ] $SHOGUN_HOME/AGENTS.md（システム概要）を読んだ
 - [ ] $SHOGUN_HOME/dashboard.mdを確認
 - [ ] 禁止事項を理解した
 - [ ] 自分でタスクを実行しようとしていない

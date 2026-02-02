@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Claude Code マルチエージェント統率システム**
+**Claude Code / Codex マルチエージェント統率システム**
 
 *コマンド1つで、8体のAIエージェントが並列稼働*
 
@@ -18,7 +18,7 @@
 
 ## これは何？
 
-**multi-agent-shogun** は、複数の Claude Code インスタンスを同時に実行し、戦国時代の軍制のように統率するシステムです。
+**multi-agent-shogun** は、複数の Claude Code または Codex インスタンスを同時に実行し、戦国時代の軍制のように統率するシステムです。
 
 **なぜ使うのか？**
 - 1つの命令で、8体のAIワーカーが並列で実行
@@ -186,8 +186,8 @@ wsl --install
 | スクリプト | 用途 | 実行タイミング |
 |-----------|------|---------------|
 | `install.bat` | Windows: WSL2 + Ubuntu のセットアップ | 初回のみ |
-| `first_setup.sh` | tmux、Node.js、Claude Code CLI のインストール + Memory MCP設定 | 初回のみ |
-| `shutsujin_departure.sh` | tmuxセッション作成 + Claude Code起動 + 指示書読み込み | 毎日 |
+| `first_setup.sh` | tmux、Node.js、Claude Code/Codex CLI のインストール + Memory MCP設定 | 初回のみ |
+| `shutsujin_departure.sh` | tmuxセッション作成 + Claude Code/Codex起動 + 指示書読み込み | 毎日 |
 
 ### `install.bat` が自動で行うこと：
 - ✅ WSL2がインストールされているかチェック（未インストールなら案内）
@@ -196,7 +196,7 @@ wsl --install
 
 ### `shutsujin_departure.sh` が行うこと：
 - ✅ tmuxセッションを作成（shogun + multiagent）
-- ✅ 全エージェントでClaude Codeを起動
+- ✅ 全エージェントでClaude CodeまたはCodexを起動
 - ✅ 各エージェントに指示書を自動読み込み
 - ✅ キューファイルをリセットして新しい状態に
 
@@ -218,6 +218,7 @@ wsl --install
 | tmux | `sudo apt install tmux` | ターミナルマルチプレクサ |
 | Node.js v20+ | `nvm install 20` | Claude Code CLIに必要 |
 | Claude Code CLI | `npm install -g @anthropic-ai/claude-code` | Anthropic公式CLI |
+| Codex CLI（任意） | `npm install -g @openai/codex` | `config/settings.yaml` → `agent: codex` で使用 |
 
 </details>
 
@@ -603,10 +604,10 @@ language: en   # 日本語 + 英訳併記
 <summary><b>shutsujin_departure.sh オプション</b>（クリックで展開）</summary>
 
 ```bash
-# デフォルト: フル起動（tmuxセッション + Claude Code起動）
+# デフォルト: フル起動（tmuxセッション + Claude Code/Codex起動）
 ./shutsujin_departure.sh
 
-# セッションセットアップのみ（Claude Code起動なし）
+# セッションセットアップのみ（Claude Code/Codex起動なし）
 ./shutsujin_departure.sh -s
 ./shutsujin_departure.sh --setup-only
 
@@ -637,6 +638,10 @@ tmux attach-session -t shogun     # 接続してコマンドを出す
 # 特定のエージェントでClaude Codeを手動起動
 tmux send-keys -t shogun:0 'claude --dangerously-skip-permissions' Enter
 tmux send-keys -t multiagent:0.0 'claude --dangerously-skip-permissions' Enter
+
+# 特定のエージェントでCodexを手動起動
+tmux send-keys -t shogun:0 'codex --dangerously-bypass-approvals-and-sandbox' Enter
+tmux send-keys -t multiagent:0.0 'codex --dangerously-bypass-approvals-and-sandbox' Enter
 ```
 
 **クラッシュ後の再起動：**
@@ -699,7 +704,7 @@ multi-agent-shogun/
 │
 ├── memory/                   # Memory MCP保存場所
 ├── dashboard.md              # リアルタイム状況一覧
-└── CLAUDE.md                 # Claude用プロジェクトコンテキスト
+└── AGENTS.md                 # プロジェクトコンテキスト（Codex/Claude）
 ```
 
 </details>
