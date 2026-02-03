@@ -45,7 +45,7 @@ workflow:
     source: $SHOGUN_HOME/queue/tasks/ashigaru{N}.yaml
   - step: 2
     action: read_context
-    files: ["$SHOGUN_HOME/AGENTS.md", "$SHOGUN_HOME/memory/global_context.md", "対象ファイル"]
+    files: ["$SHOGUN_HOME/AGENTS.md", "Memory MCP (read_graph)", "対象ファイル"]
   - step: 3
     action: execute_task
     note: "実際のファイル編集・コマンド実行"
@@ -66,15 +66,15 @@ startup_required:
     file: instructions/codex-ashigaru.md
     required: true
   - action: identify_worker_id
-    method: "echo $SHOGUN_WORKER_ID"
-    note: "未設定なら tmux display-message -p '#{pane_title}' を使い、ashigaruN を確認"
+    method: "tmux display-message -t \"$TMUX_PANE\" -p '#{@agent_id}'"
+    note: "@agent_id は起動時に固定設定されるため、ペイン再配置の影響を受けない"
   - action: read_task_file
     file: $SHOGUN_HOME/queue/tasks/ashigaru{N}.yaml
     note: "自分のタスクファイルのみ読む"
   - action: read_context_files
     files:
       - $SHOGUN_HOME/AGENTS.md
-      - $SHOGUN_HOME/memory/global_context.md
+      - Memory MCP (read_graph)
 
 # 出力形式
 output:
@@ -145,17 +145,16 @@ codex_specific:
 | **karo_to_ashigaru.yamlを書き換え** | 家老の管理を破壊 | 読み取り専用 |
 | **将軍に直接報告** | 指揮系統の混乱 | 家老経由で報告 |
 | **ポーリング（待機ループ）** | API代金が嵩む | 家老からの通知を待つ |
-| **コンテキストを読まずに作業開始** | 品質低下・エラー | 必ず$SHOGUN_HOME/AGENTS.md（システム概要）と$SHOGUN_HOME/memory/global_context.md（存在すれば）を読む |
+| **コンテキストを読まずに作業開始** | 品質低下・エラー | 必ず$SHOGUN_HOME/AGENTS.md（システム概要）とMemory MCP（read_graph）を読む |
 | **承認なしで破壊的操作を実行** | 事故防止 | rm -rf、force push等は承認を求める |
 
 ## 足軽の責務
 
 ### 1. 自分のIDを確認
-- `echo $SHOGUN_WORKER_ID` で自分のIDを確認（未設定なら `tmux display-message -p '#{pane_title}'`）
+- `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'` で自分のIDを確認
 - 表示結果が `ashigaruN` であることを確認
 - **ユーザー指示と異なる場合は自認を優先し、正しいペインへの移動を依頼**
-- `shutsujin_departure.sh` 起動時は `SHOGUN_WORKER_ID` と `pane_title` が一致する
-- 両者が不一致なら **環境異常** とみなし、作業停止・再起動を依頼
+- `@agent_id` は `shutsujin_departure.sh` が起動時に固定設定する
 - **自分の専用タスクファイルのみ読む**: $SHOGUN_HOME/queue/tasks/ashigaru{N}.yaml
 
 ### 2. タスクを受け取る
@@ -164,7 +163,7 @@ codex_specific:
 
 ### 3. コンテキストを読む
 - $SHOGUN_HOME/AGENTS.md（システム概要）を読み込む
-- $SHOGUN_HOME/memory/global_context.md（存在すれば）を読む
+- Memory MCP（read_graph）を読む
 - 対象ファイルを確認
 
 ### 4. タスクを実行
@@ -184,17 +183,8 @@ codex_specific:
 ## 自分のIDの確認方法
 
 ```bash
-# 環境変数で自認（設定済みが最優先）
-echo $SHOGUN_WORKER_ID
-
-# 未設定時のみペインタイトルで確認（karo / ashigaru1-8）
-tmux display-message -p '#{pane_title}'
-
-# 自分のID
-# Pane 1 → ashigaru1
-# Pane 2 → ashigaru2
-# ...
-# Pane 8 → ashigaru8
+# tmuxの @agent_id で自認（ペイン再配置の影響を受けない）
+tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
 ```
 
 ## コミュニケーションプロトコル
@@ -268,15 +258,15 @@ skill_candidate:
 ## セッション開始時の必須行動
 
 1. **自分の役割に対応する instructions を読め**: instructions/codex-ashigaru.md
-2. **自分のIDを確認**: `echo $SHOGUN_WORKER_ID`（未設定なら `tmux display-message -p '#{pane_title}'`）
+2. **自分のIDを確認**: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
 3. **自分のタスクファイルを確認**: $SHOGUN_HOME/queue/tasks/ashigaru{N}.yaml
-4. **$SHOGUN_HOME/AGENTS.md（システム概要）と memory/global_context.md を読み込め**: システム全体の構成を理解（存在すれば）
+4. **$SHOGUN_HOME/AGENTS.md（システム概要）と Memory MCP（read_graph）を読み込め**: システム全体の構成を理解
 5. **禁止事項を確認してから作業開始**
 
 ## コンパクション復帰時の必須行動
 
-1. **自分の位置を確認**: `echo $SHOGUN_WORKER_ID`（未設定なら `tmux display-message -p '#{session_name}:#{window_index}.#{pane_title}'`）
-   - `multiagent:0.1` ～ `multiagent:0.8` → 足軽1～8
+1. **自分の位置を確認**: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
+   - `ashigaru1` ～ `ashigaru8` → 足軽1～8
 
 2. **対応する instructions を読む**: instructions/codex-ashigaru.md
 
@@ -324,7 +314,7 @@ skill_candidate:
 - [ ] 自分のID（ashigaru{N}）を確認
 - [ ] 指示書（このファイル）を読んだ
 - [ ] 自分のタスクファイル（tasks/ashigaru{N}.yaml）を確認
-- [ ] $SHOGUN_HOME/AGENTS.md（システム概要）とmemory/global_context.mdを読んだ（存在すれば）
+- [ ] $SHOGUN_HOME/AGENTS.md（システム概要）とMemory MCP（read_graph）を読んだ
 - [ ] 禁止事項を理解した
 - [ ] 他の足軽のタスクを誤って実行していない
 - [ ] skill_candidateの報告準備ができている

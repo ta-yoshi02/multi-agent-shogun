@@ -216,7 +216,7 @@ wsl --install
 | WSL2 + Ubuntu | PowerShellで `wsl --install` | Windowsのみ |
 | Ubuntuをデフォルトに設定 | `wsl --set-default Ubuntu` | スクリプトの動作に必要 |
 | tmux | `sudo apt install tmux` | ターミナルマルチプレクサ |
-| Node.js v20+ | `nvm install 20` | Claude Code CLIに必要 |
+| Node.js v20+ | `nvm install 20` | Claude Code/Codex CLIに必要 |
 | Claude Code CLI | `npm install -g @anthropic-ai/claude-code` | Anthropic公式CLI |
 | Codex CLI（任意） | `npm install -g @openai/codex` | `config/settings.yaml` → `agent: codex` で使用 |
 
@@ -349,19 +349,33 @@ screenshot:
 
 ### 📁 6. コンテキスト管理
 
-効率的な知識共有のため、3層構造のコンテキストを採用：
+効率的な知識共有のため、四層構造のコンテキストを採用：
 
 | レイヤー | 場所 | 用途 |
 |---------|------|------|
-| Memory MCP | `memory/shogun_memory.jsonl` | セッションを跨ぐ長期記憶 |
-| グローバル | `memory/global_context.md` | システム全体の設定、殿の好み |
-| プロジェクト | `context/{project}.md` | プロジェクト固有の知見 |
+| Layer 1: Memory MCP | `memory/shogun_memory.jsonl` | プロジェクト横断・セッションを跨ぐ長期記憶 |
+| Layer 2: Project | `config/projects.yaml`, `projects/<id>.yaml`, `context/{project}.md` | プロジェクト固有情報・技術知見 |
+| Layer 3: YAML Queue | `queue/shogun_to_karo.yaml`, `queue/tasks/`, `queue/reports/` | タスク管理・指示と報告の正データ |
+| Layer 4: Session | CLAUDE.md / AGENTS.md, instructions/*.md | 作業中コンテキスト（/clearで破棄） |
 
 この設計により：
 - どの足軽でも任意のプロジェクトを担当可能
 - エージェント切り替え時もコンテキスト継続
 - 関心の分離が明確
 - セッション間の知識永続化
+
+#### /clear プロトコル（コスト最適化）
+
+長時間作業するとコンテキスト（Layer 4）が膨れ、APIコストが増大する。`/clear` でセッション記憶を消去すれば、コストがリセットされる。Layer 1〜3はファイルとして残るので失われない。
+
+`/clear` 後の足軽の復帰コスト: **約1,950トークン**（目標5,000の39%）
+
+1. CLAUDE.md / AGENTS.md（自動読み込み）→ shogunシステムの一員と認識
+2. `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'` → 自分の番号を確認
+3. Memory MCP 読み込み → 殿の好みを復元（~700トークン）
+4. タスクYAML 読み込み → 次の仕事を確認（~800トークン）
+
+「何を読ませないか」の設計がコスト削減に効いている。
 
 ### 汎用コンテキストテンプレート
 
@@ -389,10 +403,29 @@ screenshot:
 | エージェント | モデル | 思考モード | 理由 |
 |-------------|--------|----------|------|
 | 将軍 | Opus | 無効 | 委譲とダッシュボード更新に深い推論は不要 |
-| 家老 | デフォルト | 有効 | タスク分配には慎重な判断が必要 |
-| 足軽 | デフォルト | 有効 | 実装作業にはフル機能が必要 |
+| 家老 | Opus | 有効 | タスク分配には慎重な判断が必要 |
+| 足軽1-4 | Sonnet | 有効 | コスト効率重視の標準タスク向け |
+| 足軽5-8 | Opus | 有効 | 複雑なタスク向けのフル機能 |
 
 将軍は `MAX_THINKING_TOKENS=0` で拡張思考を無効化し、高レベルな判断にはOpusの能力を維持しつつ、レイテンシとコストを削減。
+Codexを使う場合は `config/settings.yaml` の `codex.*` を参照し、**Opus相当=high / Sonnet相当=medium** で調整する。
+
+Codexの起動モデルを指定する場合:
+```yaml
+# config/settings.yaml
+agent: codex
+codex:
+  model: gpt-5.2-codex
+```
+
+#### 陣形モード
+
+| 陣形 | 足軽1-4 | 足軽5-8 | コマンド |
+|------|---------|---------|---------|
+| **平時の陣**（デフォルト） | Sonnet Thinking | Opus Thinking | `./shutsujin_departure.sh` |
+| **決戦の陣**（全力） | Opus Thinking | Opus Thinking | `./shutsujin_departure.sh -k` |
+
+平時は半数を安いSonnetモデルで運用。ここぞという時に `-k`（`--kessen`）で全軍Opusの「決戦の陣」に切り替え。家老の判断で `/model opus` を送れば、個別の足軽を一時昇格させることも可能。
 
 ---
 
@@ -414,6 +447,19 @@ screenshot:
 3. **割り込み防止**: エージェント同士やあなたの入力への割り込みを防止
 4. **デバッグ容易**: 人間がYAMLを直接読んで状況把握できる
 5. **競合回避**: 各足軽に専用ファイルを割り当て
+6. **2秒間隔送信**: 複数足軽への連続送信時に `sleep 2` を挟むことで、入力バッファ溢れを防止（到達率14%→87.5%に改善）
+
+### エージェント識別（@agent_id）
+
+各ペインに `@agent_id` というtmuxユーザーオプションを設定（例: `karo`, `ashigaru1`）。`pane_index` はペイン再配置でズレるが、`@agent_id` は `shutsujin_departure.sh` が起動時に固定設定するため変わらない。
+
+エージェントの自己識別:
+```bash
+tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
+```
+`-t "$TMUX_PANE"` が必須。省略するとアクティブペイン（操作中のペイン）の値が返り、誤認識の原因になる。
+
+モデル名も `@model_name` として保存され、`pane-border-format` で常時表示。Claude Codeがペインタイトルを上書きしてもモデル名は消えない。
 
 ### なぜ dashboard.md は家老のみが更新するのか
 
@@ -441,7 +487,7 @@ screenshot:
 
 **1. スキルはコミット対象外**
 
-スキルはリポジトリにコミットしない設計。保存先はエージェントごとに異なる。理由：
+`.claude/commands/` 配下のスキルはリポジトリにコミットしない設計。理由：
 - 各ユーザの業務・ワークフローは異なる
 - 汎用的なスキルを押し付けるのではなく、ユーザが自分に必要なスキルを育てていく
 
@@ -495,7 +541,7 @@ claude mcp add sequential-thinking -- npx -y @modelcontextprotocol/server-sequen
 # codex: codex mcp add sequential-thinking -- npx -y @modelcontextprotocol/server-sequential-thinking
 
 # 5. Memory - セッション間の長期記憶（推奨！）
-# ✅ first_setup.sh で自動設定済み（config/settings.yaml を参照）
+# ✅ first_setup.sh で自動設定済み
 # 手動で再設定する場合:
 claude mcp add memory -e MEMORY_FILE_PATH="$PWD/memory/shogun_memory.jsonl" -- npx -y @modelcontextprotocol/server-memory
 # codex: codex mcp add memory --env MEMORY_FILE_PATH="$PWD/memory/shogun_memory.jsonl" -- npx -y @modelcontextprotocol/server-memory
@@ -578,7 +624,7 @@ language: en   # 日本語 + 英訳併記
 │      │                                                              │
 │      ├── tmuxのチェック/インストール                                  │
 │      ├── Node.js v20+のチェック/インストール (nvm経由)                │
-│      ├── Claude Code CLIのチェック/インストール                      │
+│      ├── Claude Code/Codex CLIのチェック/インストール                │
 │      └── Memory MCPサーバー設定                                      │
 │                                                                     │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -593,7 +639,7 @@ language: en   # 日本語 + 英訳併記
 │      │                                                              │
 │      ├──▶ キューファイルとダッシュボードをリセット                     │
 │      │                                                              │
-│      └──▶ 全エージェントでClaude Codeを起動                          │
+│      └──▶ 全エージェントでClaude Code/Codexを起動                    │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -610,6 +656,10 @@ language: en   # 日本語 + 英訳併記
 # セッションセットアップのみ（Claude Code/Codex起動なし）
 ./shutsujin_departure.sh -s
 ./shutsujin_departure.sh --setup-only
+
+# 決戦の陣: 全足軽をOpusで起動（最大能力・高コスト）
+./shutsujin_departure.sh -k
+./shutsujin_departure.sh --kessen
 
 # フル起動 + Windows Terminalタブを開く
 ./shutsujin_departure.sh -t
@@ -639,7 +689,7 @@ tmux attach-session -t shogun     # 接続してコマンドを出す
 tmux send-keys -t shogun:0 'claude --dangerously-skip-permissions' Enter
 tmux send-keys -t multiagent:0.0 'claude --dangerously-skip-permissions' Enter
 
-# 特定のエージェントでCodexを手動起動
+# Codex を手動起動
 tmux send-keys -t shogun:0 'codex --dangerously-bypass-approvals-and-sandbox' Enter
 tmux send-keys -t multiagent:0.0 'codex --dangerously-bypass-approvals-and-sandbox' Enter
 ```
@@ -704,7 +754,8 @@ multi-agent-shogun/
 │
 ├── memory/                   # Memory MCP保存場所
 ├── dashboard.md              # リアルタイム状況一覧
-└── AGENTS.md                 # プロジェクトコンテキスト（Codex/Claude）
+├── CLAUDE.md                 # Claude用プロジェクトコンテキスト
+└── AGENTS.md                 # Codex用プロジェクトコンテキスト
 ```
 
 </details>
@@ -775,7 +826,7 @@ mcp__memory__read_graph()  ← 動作！
 <details>
 <summary><b>エージェントが権限を求めてくる？</b></summary>
 
-エージェントに応じて以下のフラグで起動していることを確認：
+エージェントに応じたフラグで起動していることを確認：
 
 ```bash
 claude --dangerously-skip-permissions --system-prompt "..."
@@ -795,6 +846,30 @@ tmux attach-session -t multiagent
 
 </details>
 
+<details>
+<summary><b>将軍やエージェントが落ちた？（Claude Code/Codexプロセスがkillされた）</b></summary>
+
+**`css` 等のtmuxセッション起動エイリアスを使って再起動してはいけません。** これらのエイリアスはtmuxセッションを作成するため、既存のtmuxペイン内で実行するとセッションがネスト（入れ子）になり、入力が壊れてペインが使用不能になります。
+
+**正しい再起動方法：**
+
+```bash
+# 方法1: ペイン内でclaudeを直接実行
+claude --model opus --dangerously-skip-permissions
+codex --dangerously-bypass-approvals-and-sandbox
+
+# 方法2: 家老がrespawn-paneで強制再起動（ネストも解消される）
+tmux respawn-pane -t shogun:0.0 -k 'claude --model opus --dangerously-skip-permissions'
+tmux respawn-pane -t shogun:0.0 -k 'codex --dangerously-bypass-approvals-and-sandbox'
+```
+
+**誤ってtmuxをネストしてしまった場合：**
+1. `Ctrl+B` の後 `d` でデタッチ（内側のセッションから離脱）
+2. その後 `claude` を直接実行（`css` は使わない）
+3. デタッチが効かない場合は、別のペインから `tmux respawn-pane -k` で強制リセット
+
+</details>
+
 ---
 
 ## 📚 tmux クイックリファレンス
@@ -807,18 +882,6 @@ tmux attach-session -t multiagent
 | `Ctrl+B` の後 `d` | デタッチ（実行継続） |
 | `tmux kill-session -t shogun` | 将軍セッションを停止 |
 | `tmux kill-session -t multiagent` | ワーカーセッションを停止 |
-
----
-
-## 📂 作業ディレクトリ
-
-起動時に全ペインは、`config/projects.yaml` の `current_project` に対応する `path` へ `cd` する。
-`path` が未設定・無効な場合は `multi-agent-shogun` リポジトリ直下へフォールバックする。
-
-### 環境変数
-
-- `SHOGUN_HOME`: 本リポジトリの絶対パス（システムルート）
-- `SHOGUN_PROJECT_ROOT`: アクティブなプロジェクトの絶対パス（`current_project`）
 
 ### 🖱️ マウス操作
 

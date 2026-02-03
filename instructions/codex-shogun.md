@@ -57,9 +57,9 @@ startup_required:
     required: true
   - action: read_memory_context
     files:
-      - $SHOGUN_HOME/memory/global_context.md
-    condition: "新規セッション開始時（存在すれば）"
-    note: "CodexではMemory MCPが使えない場合があるため、ファイルで確認する"
+      - Memory MCP (read_graph)
+    condition: "新規セッション開始時"
+    note: "Memory MCP を優先して確認する"
   - action: read_context_files
     files:
       - $SHOGUN_HOME/AGENTS.md
@@ -146,7 +146,7 @@ codex_specific:
 
 新たなセッションを開始した際（初回起動時）は、作業前に必ず以下を実行せよ。
 
-1. **Memory MCPを確認（使える場合）**: Claudeでは `mcp__memory__read_graph` を実行。Codexで使えない場合は `memory/global_context.md`（存在すれば）を読む。必要なら `memory/shogun_memory.jsonl` を参照せよ。
+1. **Memory MCPを確認（使える場合）**: `mcp__memory__read_graph` を実行。使えない場合は省略して次へ進む。
 
 2. **自分の役割に対応する instructions を読め**: instructions/codex-shogun.md （このファイル）
 
@@ -157,8 +157,8 @@ codex_specific:
 
 コンパクション後は作業前に必ず以下を実行せよ：
 
-1. **自分の位置を確認**: `echo $SHOGUN_WORKER_ID`（設定済みなら最優先） / `tmux display-message -p '#{session_name}:#{window_index}.#{pane_title}'`
-   - `shogun:0.0` → 将軍（正しい）
+1. **自分の位置を確認**: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
+   - `shogun` → 将軍（正しい）
 
 2. **対応する instructions を読む**: instructions/codex-shogun.md
 
@@ -255,8 +255,8 @@ config/settings.yaml の `language` で言語を設定する。
 
 ## チェックリスト（毎回確認せよ）
 
-- [ ] 自分が将軍（shogun:0.0）であることを確認
-- [ ] Memory MCP（使える場合）/ memory/global_context.md を確認（セッション開始時）
+- [ ] 自分が将軍（shogun）であることを確認
+- [ ] Memory MCP（read_graph）を確認（セッション開始時）
 - [ ] 指示書（このファイル）を読んだ
 - [ ] $SHOGUN_HOME/AGENTS.md（システム概要）を読んだ
 - [ ] $SHOGUN_HOME/dashboard.mdを確認

@@ -75,9 +75,9 @@ startup_required:
     required: true
   - action: read_memory_context
     files:
-      - $SHOGUN_HOME/memory/global_context.md
-    condition: "新規セッション開始時（存在すれば）"
-    note: "CodexではMemory MCPが使えない場合があるため、ファイルで確認する"
+      - Memory MCP (read_graph)
+    condition: "新規セッション開始時"
+    note: "Memory MCP を優先して確認する"
   - action: read_shogun_yaml
     file: $SHOGUN_HOME/queue/shogun_to_karo.yaml
     note: "将軍からの指令を確認"
@@ -252,7 +252,7 @@ skill_candidate:
 
 ## セッション開始時の必須行動
 
-1. **Memory MCPを確認（使える場合）**: Claudeでは `mcp__memory__read_graph` を実行。Codexで使えない場合は `memory/global_context.md`（存在すれば）を読む。必要なら `memory/shogun_memory.jsonl` を参照せよ。
+1. **Memory MCPを確認（使える場合）**: `mcp__memory__read_graph` を実行。使えない場合は省略して次へ進む。
 2. **自分の役割に対応する instructions を読め**: instructions/codex-karo.md
 3. **将軍の指令を確認**: $SHOGUN_HOME/queue/shogun_to_karo.yaml
 4. **$SHOGUN_HOME/AGENTS.md（システム概要）を読み込め**: システム全体の構成を理解
@@ -260,8 +260,8 @@ skill_candidate:
 
 ## コンパクション復帰時の必須行動
 
-1. **自分の位置を確認**: `echo $SHOGUN_WORKER_ID`（設定済みなら最優先） / `tmux display-message -p '#{session_name}:#{window_index}.#{pane_title}'`
-   - `multiagent:0.0` → 家老（正しい）
+1. **自分の位置を確認**: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
+   - `karo` → 家老（正しい）
 
 2. **対応する instructions を読む**: instructions/codex-karo.md
 
@@ -305,8 +305,8 @@ skill_candidate:
 
 ## チェックリスト（毎回確認せよ）
 
-- [ ] 自分が家老（multiagent:0.0）であることを確認
-- [ ] Memory MCP（使える場合）/ memory/global_context.md を確認（セッション開始時）
+- [ ] 自分が家老（karo）であることを確認
+- [ ] Memory MCP（read_graph）を確認（セッション開始時）
 - [ ] 指示書（このファイル）を読んだ
 - [ ] 将軍の指令（shogun_to_karo.yaml）を確認
 - [ ] $SHOGUN_HOME/AGENTS.md（システム概要）を読んだ
