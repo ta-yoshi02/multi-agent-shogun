@@ -16,7 +16,7 @@ language: ja
 
 # シェル設定 (bash | zsh)
 # Shell setting
-shell: bash
+shell: zsh
 
 # スクリーンショット保存パス
 # Screenshot save path
