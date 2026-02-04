@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Claude Code マルチエージェント統率システム**
+**Claude Code / Codex マルチエージェント統率システム**
 
 *コマンド1つで、8体のAIエージェントが並列稼働*
 
@@ -18,7 +18,7 @@
 
 ## これは何？
 
-**multi-agent-shogun** は、複数の Claude Code インスタンスを同時に実行し、戦国時代の軍制のように統率するシステムです。
+**multi-agent-shogun** は、複数の Claude Code または Codex インスタンスを同時に実行し、戦国時代の軍制のように統率するシステムです。
 
 **なぜ使うのか？**
 - 1つの命令で、8体のAIワーカーが並列で実行
@@ -186,8 +186,8 @@ wsl --install
 | スクリプト | 用途 | 実行タイミング |
 |-----------|------|---------------|
 | `install.bat` | Windows: WSL2 + Ubuntu のセットアップ | 初回のみ |
-| `first_setup.sh` | tmux、Node.js、Claude Code CLI のインストール + Memory MCP設定 | 初回のみ |
-| `shutsujin_departure.sh` | tmuxセッション作成 + Claude Code起動 + 指示書読み込み | 毎日 |
+| `first_setup.sh` | tmux、Node.js、Claude Code/Codex CLI のインストール + Memory MCP設定 | 初回のみ |
+| `shutsujin_departure.sh` | tmuxセッション作成 + Claude Code/Codex起動 + 指示書読み込み | 毎日 |
 
 ### `install.bat` が自動で行うこと：
 - ✅ WSL2がインストールされているかチェック（未インストールなら案内）
@@ -196,7 +196,7 @@ wsl --install
 
 ### `shutsujin_departure.sh` が行うこと：
 - ✅ tmuxセッションを作成（shogun + multiagent）
-- ✅ 全エージェントでClaude Codeを起動
+- ✅ 全エージェントでClaude CodeまたはCodexを起動
 - ✅ 各エージェントに指示書を自動読み込み
 - ✅ キューファイルをリセットして新しい状態に
 
@@ -216,8 +216,9 @@ wsl --install
 | WSL2 + Ubuntu | PowerShellで `wsl --install` | Windowsのみ |
 | Ubuntuをデフォルトに設定 | `wsl --set-default Ubuntu` | スクリプトの動作に必要 |
 | tmux | `sudo apt install tmux` | ターミナルマルチプレクサ |
-| Node.js v20+ | `nvm install 20` | Claude Code CLIに必要 |
+| Node.js v20+ | `nvm install 20` | Claude Code/Codex CLIに必要 |
 | Claude Code CLI | `npm install -g @anthropic-ai/claude-code` | Anthropic公式CLI |
+| Codex CLI（任意） | `npm install -g @openai/codex` | `config/settings.yaml` → `agent: codex` で使用 |
 
 </details>
 
@@ -407,6 +408,15 @@ screenshot:
 | 足軽5-8 | Opus | 有効 | 複雑なタスク向けのフル機能 |
 
 将軍は `MAX_THINKING_TOKENS=0` で拡張思考を無効化し、高レベルな判断にはOpusの能力を維持しつつ、レイテンシとコストを削減。
+Codexを使う場合は `config/settings.yaml` の `codex.*` を参照し、**Opus相当=high / Sonnet相当=medium** で調整する。
+
+Codexの起動モデルを指定する場合:
+```yaml
+# config/settings.yaml
+agent: codex
+codex:
+  model: gpt-5.2-codex
+```
 
 #### 陣形モード
 
@@ -465,7 +475,13 @@ tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
 初期状態ではスキルはありません。
 運用中にダッシュボード（dashboard.md）の「スキル化候補」から承認して増やしていきます。
 
-スキルは `/スキル名` で呼び出し可能。将軍に「/スキル名 を実行」と伝えるだけ。
+スキルの呼び出し方法はエージェントで異なります。
+- **Claude Code**: `/スキル名`
+- **Codex**: `$スキル名`
+
+保存場所もエージェントで異なります。
+- **Claude Code**: `~/.claude/skills/`
+- **Codex**: `~/.codex/skills/`
 
 ### スキルの思想
 
@@ -493,43 +509,49 @@ dashboard.md の「スキル化候補」に上がる
 
 ## 🔌 MCPセットアップガイド
 
-MCP（Model Context Protocol）サーバはClaudeの機能を拡張します。セットアップ方法：
+MCP（Model Context Protocol）サーバはClaude/Codexの機能を拡張します。セットアップ方法：
 
 ### MCPとは？
 
-MCPサーバはClaudeに外部ツールへのアクセスを提供します：
+MCPサーバはエージェントに外部ツールへのアクセスを提供します：
 - **Notion MCP** → Notionページの読み書き
 - **GitHub MCP** → PR作成、Issue管理
 - **Memory MCP** → セッション間で記憶を保持
 
 ### MCPサーバのインストール
 
-以下のコマンドでMCPサーバを追加：
+以下のコマンドでMCPサーバを追加（`config/settings.yaml` の `agent` に応じて `claude` または `codex` を使用）：
 
 ```bash
 # 1. Notion - Notionワークスペースに接続
 claude mcp add notion -e NOTION_TOKEN=your_token_here -- npx -y @notionhq/notion-mcp-server
+# codex: codex mcp add notion --env NOTION_TOKEN=your_token_here -- npx -y @notionhq/notion-mcp-server
 
 # 2. Playwright - ブラウザ自動化
 claude mcp add playwright -- npx @playwright/mcp@latest
+# codex: codex mcp add playwright -- npx @playwright/mcp@latest
 # 注意: 先に `npx playwright install chromium` を実行してください
 
 # 3. GitHub - リポジトリ操作
 claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=your_pat_here -- npx -y @modelcontextprotocol/server-github
+# codex: codex mcp add github --env GITHUB_PERSONAL_ACCESS_TOKEN=your_pat_here -- npx -y @modelcontextprotocol/server-github
 
 # 4. Sequential Thinking - 複雑な問題を段階的に思考
 claude mcp add sequential-thinking -- npx -y @modelcontextprotocol/server-sequential-thinking
+# codex: codex mcp add sequential-thinking -- npx -y @modelcontextprotocol/server-sequential-thinking
 
 # 5. Memory - セッション間の長期記憶（推奨！）
 # ✅ first_setup.sh で自動設定済み
 # 手動で再設定する場合:
 claude mcp add memory -e MEMORY_FILE_PATH="$PWD/memory/shogun_memory.jsonl" -- npx -y @modelcontextprotocol/server-memory
+# codex: codex mcp add memory --env MEMORY_FILE_PATH="$PWD/memory/shogun_memory.jsonl" -- npx -y @modelcontextprotocol/server-memory
 ```
 
 ### インストール確認
 
 ```bash
 claude mcp list
+# codex: codex mcp list
 ```
 
 全サーバが「Connected」ステータスで表示されるはずです。
@@ -602,7 +624,7 @@ language: en   # 日本語 + 英訳併記
 │      │                                                              │
 │      ├── tmuxのチェック/インストール                                  │
 │      ├── Node.js v20+のチェック/インストール (nvm経由)                │
-│      ├── Claude Code CLIのチェック/インストール                      │
+│      ├── Claude Code/Codex CLIのチェック/インストール                │
 │      └── Memory MCPサーバー設定                                      │
 │                                                                     │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -617,7 +639,7 @@ language: en   # 日本語 + 英訳併記
 │      │                                                              │
 │      ├──▶ キューファイルとダッシュボードをリセット                     │
 │      │                                                              │
-│      └──▶ 全エージェントでClaude Codeを起動                          │
+│      └──▶ 全エージェントでClaude Code/Codexを起動                    │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -628,10 +650,10 @@ language: en   # 日本語 + 英訳併記
 <summary><b>shutsujin_departure.sh オプション</b>（クリックで展開）</summary>
 
 ```bash
-# デフォルト: フル起動（tmuxセッション + Claude Code起動）
+# デフォルト: フル起動（tmuxセッション + Claude Code/Codex起動）
 ./shutsujin_departure.sh
 
-# セッションセットアップのみ（Claude Code起動なし）
+# セッションセットアップのみ（Claude Code/Codex起動なし）
 ./shutsujin_departure.sh -s
 ./shutsujin_departure.sh --setup-only
 
@@ -666,6 +688,10 @@ tmux attach-session -t shogun     # 接続してコマンドを出す
 # 特定のエージェントでClaude Codeを手動起動
 tmux send-keys -t shogun:0 'claude --dangerously-skip-permissions' Enter
 tmux send-keys -t multiagent:0.0 'claude --dangerously-skip-permissions' Enter
+
+# Codex を手動起動
+tmux send-keys -t shogun:0 'codex --dangerously-bypass-approvals-and-sandbox' Enter
+tmux send-keys -t multiagent:0.0 'codex --dangerously-bypass-approvals-and-sandbox' Enter
 ```
 
 **クラッシュ後の再起動：**
@@ -799,10 +825,11 @@ mcp__memory__read_graph()  ← 動作！
 <details>
 <summary><b>エージェントが権限を求めてくる？</b></summary>
 
-`--dangerously-skip-permissions` 付きで起動していることを確認：
+エージェントに応じたフラグで起動していることを確認：
 
 ```bash
 claude --dangerously-skip-permissions --system-prompt "..."
+codex --dangerously-bypass-approvals-and-sandbox
 ```
 
 </details>
@@ -819,7 +846,7 @@ tmux attach-session -t multiagent
 </details>
 
 <details>
-<summary><b>将軍やエージェントが落ちた？（Claude Codeプロセスがkillされた）</b></summary>
+<summary><b>将軍やエージェントが落ちた？（Claude Code/Codexプロセスがkillされた）</b></summary>
 
 **`css` 等のtmuxセッション起動エイリアスを使って再起動してはいけません。** これらのエイリアスはtmuxセッションを作成するため、既存のtmuxペイン内で実行するとセッションがネスト（入れ子）になり、入力が壊れてペインが使用不能になります。
 
@@ -828,9 +855,11 @@ tmux attach-session -t multiagent
 ```bash
 # 方法1: ペイン内でclaudeを直接実行
 claude --model opus --dangerously-skip-permissions
+codex --dangerously-bypass-approvals-and-sandbox
 
 # 方法2: 家老がrespawn-paneで強制再起動（ネストも解消される）
 tmux respawn-pane -t shogun:0.0 -k 'claude --model opus --dangerously-skip-permissions'
+tmux respawn-pane -t shogun:0.0 -k 'codex --dangerously-bypass-approvals-and-sandbox'
 ```
 
 **誤ってtmuxをネストしてしまった場合：**

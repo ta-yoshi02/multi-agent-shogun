@@ -4,7 +4,7 @@
 
 **Command your AI army like a feudal warlord.**
 
-Run 8 Claude Code agents in parallel — orchestrated through a samurai-inspired hierarchy with zero coordination overhead.
+Run 8 Claude Code or Codex agents in parallel — orchestrated through a samurai-inspired hierarchy with zero coordination overhead.
 
 [![GitHub Stars](https://img.shields.io/github/stars/yohey-w/multi-agent-shogun?style=social)](https://github.com/yohey-w/multi-agent-shogun)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -23,7 +23,7 @@ Run 8 Claude Code agents in parallel — orchestrated through a samurai-inspired
 
 ---
 
-Give a single command. The **Shogun** (general) delegates to the **Karo** (steward), who distributes work across up to **8 Ashigaru** (foot soldiers) — all running as independent Claude Code processes in tmux. Communication flows through YAML files and tmux `send-keys`, meaning **zero extra API calls** for agent coordination.
+Give a single command. The **Shogun** (general) delegates to the **Karo** (steward), who distributes work across up to **8 Ashigaru** (foot soldiers) — all running as independent Claude Code or Codex processes in tmux. Communication flows through YAML files and tmux `send-keys`, meaning **zero extra API calls** for agent coordination.
 
 <!-- TODO: add demo.gif — record with asciinema or vhs -->
 
@@ -66,9 +66,11 @@ Reports in YAML:  skill_candidate:
                      name: "api-endpoint-scaffold"
                      reason: "Same REST scaffold pattern used in 3 projects"
     ↓
-Appears in dashboard.md → You approve → Skill created in .claude/commands/
+Appears in dashboard.md → You approve → Skill created in `~/.claude/skills/` (Claude) or `~/.codex/skills/` (Codex)
     ↓
-Any agent can now invoke /api-endpoint-scaffold
+Any agent can now invoke:
+- Claude Code: `/api-endpoint-scaffold`
+- Codex: `$api-endpoint-scaffold`
 ```
 
 Skills grow organically from real work — not from a predefined template library. Your skill set becomes a reflection of **your** workflow.
@@ -110,7 +112,7 @@ Skills grow organically from real work — not from a predefined template librar
 | Memory MCP | Preferences, rules, cross-project knowledge | Everything |
 | Project files | `config/projects.yaml`, `context/*.md` | Everything |
 | YAML Queue | Tasks, reports (source of truth) | Everything |
-| Session | `CLAUDE.md`, instructions | `/clear` wipes it |
+| Session | `CLAUDE.md` / `AGENTS.md`, instructions | `/clear` wipes it |
 
 After `/clear`, an agent recovers in **~2,000 tokens** by reading Memory MCP + its task YAML. No expensive re-prompting.
 
@@ -147,7 +149,7 @@ git clone https://github.com/yohey-w/multi-agent-shogun.git C:\tools\multi-agent
 
 # 3. In Ubuntu terminal:
 cd /mnt/c/tools/multi-agent-shogun
-./first_setup.sh          # One-time: installs tmux, Node.js, Claude Code CLI
+./first_setup.sh          # One-time: installs tmux, Node.js, Claude Code/Codex CLI
 ./shutsujin_departure.sh  # Deploy your army
 ```
 
@@ -262,20 +264,36 @@ language: en   # Samurai Japanese + English translation
 | Ashigaru 1–4 | Sonnet | Enabled |
 | Ashigaru 5–8 | Opus | Enabled |
 
+For `agent: codex`, model and reasoning settings come from `config/settings.yaml` → `codex.*` (Opus equivalent = `high`, Sonnet equivalent = `medium`).
+
+To set the Codex model at startup:
+```yaml
+# config/settings.yaml
+agent: codex
+codex:
+  model: gpt-5.2-codex
+```
+
 ### MCP servers
+
+Use `claude` or `codex` based on `config/settings.yaml` → `agent`.
 
 ```bash
 # Memory (auto-configured by first_setup.sh)
 claude mcp add memory -e MEMORY_FILE_PATH="$PWD/memory/shogun_memory.jsonl" -- npx -y @modelcontextprotocol/server-memory
+# codex: codex mcp add memory --env MEMORY_FILE_PATH="$PWD/memory/shogun_memory.jsonl" -- npx -y @modelcontextprotocol/server-memory
 
 # Notion
 claude mcp add notion -e NOTION_TOKEN=your_token -- npx -y @notionhq/notion-mcp-server
+# codex: codex mcp add notion --env NOTION_TOKEN=your_token -- npx -y @notionhq/notion-mcp-server
 
 # GitHub
 claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=your_pat -- npx -y @modelcontextprotocol/server-github
+# codex: codex mcp add github --env GITHUB_PERSONAL_ACCESS_TOKEN=your_pat -- npx -y @modelcontextprotocol/server-github
 
 # Playwright (browser automation)
 claude mcp add playwright -- npx @playwright/mcp@latest
+# codex: codex mcp add playwright -- npx @playwright/mcp@latest
 ```
 
 ### Screenshot integration
@@ -302,6 +320,9 @@ multi-agent-shogun/
 │   ├── shogun.md
 │   ├── karo.md
 │   └── ashigaru.md
+│   ├── codex-shogun.md
+│   ├── codex-karo.md
+│   └── codex-ashigaru.md
 │
 ├── config/
 │   ├── settings.yaml          # Language, model, screenshot settings
@@ -314,7 +335,8 @@ multi-agent-shogun/
 │
 ├── memory/                    # Memory MCP persistent storage
 ├── dashboard.md               # Human-readable status board
-└── CLAUDE.md                  # System instructions (auto-loaded)
+├── CLAUDE.md                  # System instructions (Claude Code)
+└── AGENTS.md                  # System instructions (Codex)
 ```
 
 ---
@@ -324,7 +346,10 @@ multi-agent-shogun/
 <details>
 <summary><b>Agents asking for permissions?</b></summary>
 
-Agents should start with `--dangerously-skip-permissions`. This is handled automatically by `shutsujin_departure.sh`.
+Agents should start with the correct flag. This is handled automatically by `shutsujin_departure.sh`.
+
+- Claude Code: `--dangerously-skip-permissions`
+- Codex: `--dangerously-bypass-approvals-and-sandbox`
 
 </details>
 
@@ -347,9 +372,11 @@ Don't use `css`/`csm` aliases inside an existing tmux session (causes nesting). 
 ```bash
 # From the crashed pane:
 claude --model opus --dangerously-skip-permissions
+codex --dangerously-bypass-approvals-and-sandbox
 
 # Or from another pane:
 tmux respawn-pane -t shogun:0.0 -k 'claude --model opus --dangerously-skip-permissions'
+tmux respawn-pane -t shogun:0.0 -k 'codex --dangerously-bypass-approvals-and-sandbox'
 ```
 
 </details>
