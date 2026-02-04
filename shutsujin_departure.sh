@@ -5,7 +5,7 @@
 # 使用方法:
 #   ./shutsujin_departure.sh           # 全エージェント起動（前回の状態を維持）
 #   ./shutsujin_departure.sh -c        # キューをリセットして起動（クリーンスタート）
-#   ./shutsujin_departure.sh -s        # セットアップのみ（Claude起動なし）
+#   ./shutsujin_departure.sh -s        # セットアップのみ（エージェント起動なし）
 #   ./shutsujin_departure.sh -h        # ヘルプ表示
 
 set -e
@@ -26,10 +26,10 @@ if [ -f "./config/settings.yaml" ]; then
     SHELL_SETTING=$(grep "^shell:" ./config/settings.yaml 2>/dev/null | awk '{print $2}' || echo "bash")
 fi
 
-# エージェント設定を読み取り（デフォルト: claude）
-AGENT_SETTING="claude"
+# エージェント設定を読み取り（デフォルト: codex）
+AGENT_SETTING="codex"
 if [ -f "./config/settings.yaml" ]; then
-    AGENT_SETTING=$(grep "^agent:" ./config/settings.yaml 2>/dev/null | awk '{print $2}' || echo "claude")
+    AGENT_SETTING=$(grep "^agent:" ./config/settings.yaml 2>/dev/null | awk '{print $2}' || echo "codex")
 fi
 
 # Codex思考深度設定を読み取り（デフォルト: shogun=high, worker=medium）
@@ -260,7 +260,7 @@ while [[ $# -gt 0 ]]; do
             echo "                      未指定時は前回の状態を維持して起動"
             echo "  -k, --kessen        決戦の陣（全足軽をOpus Thinkingで起動）"
             echo "                      未指定時は平時の陣（足軽1-4=Sonnet, 足軽5-8=Opus）"
-            echo "  -s, --setup-only    tmuxセッションのセットアップのみ（Claude/Codex起動なし）"
+            echo "  -s, --setup-only    tmuxセッションのセットアップのみ（エージェント起動なし）"
             echo "  -t, --terminal      Windows Terminal で新しいタブを開く"
             echo "  -shell, --shell SH  シェルを指定（bash または zsh）"
             echo "                      未指定時は config/settings.yaml の設定を使用"
@@ -269,7 +269,7 @@ while [[ $# -gt 0 ]]; do
             echo "例:"
             echo "  ./shutsujin_departure.sh              # 前回の状態を維持して出陣"
             echo "  ./shutsujin_departure.sh -c           # クリーンスタート（キューリセット）"
-            echo "  ./shutsujin_departure.sh -s           # セットアップのみ（手動でClaude/Codex起動）"
+            echo "  ./shutsujin_departure.sh -s           # セットアップのみ（手動でエージェント起動）"
             echo "  ./shutsujin_departure.sh -t           # 全エージェント起動 + ターミナルタブ展開"
             echo "  ./shutsujin_departure.sh -shell bash  # bash用プロンプトで起動"
             echo "  ./shutsujin_departure.sh -k           # 決戦の陣（全足軽Opus Thinking）"
@@ -697,7 +697,7 @@ for i in {0..8}; do
     tmux send-keys -t "multiagent:agents.${p}" "cd \"$(pwd)\" && export PS1='${PROMPT_STR}' && clear" Enter
 done
 
-# pane-border-format でモデル名を常時表示（Claude Codeがペインタイトルを上書きしても消えない）
+# pane-border-format でモデル名を常時表示（エージェントがペインタイトルを上書きしても消えない）
 tmux set-option -t multiagent -w pane-border-status top
 tmux set-option -t multiagent -w pane-border-format '#{pane_index} #{@agent_id} (#{?#{==:#{@model_name},},unknown,#{@model_name}})'
 

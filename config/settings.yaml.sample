@@ -6,9 +6,9 @@
 # 2. 自分の環境に合わせて値を編集
 # 3. settings.yaml は .gitignore に含まれているため、ローカルでのみ使用される
 
-# 使用するAIエージェント (claude | codex)
-# AI Agent to use (claude | codex)
-agent: claude
+# 使用するAIエージェント (codex | claude)
+# AI Agent to use (codex | claude)
+agent: codex
 
 # 言語設定 (ja | en | es | zh | ko | fr | de)
 # Language setting

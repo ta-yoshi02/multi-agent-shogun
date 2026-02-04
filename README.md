@@ -149,7 +149,7 @@ git clone https://github.com/yohey-w/multi-agent-shogun.git C:\tools\multi-agent
 
 # 3. In Ubuntu terminal:
 cd /mnt/c/tools/multi-agent-shogun
-./first_setup.sh          # One-time: installs tmux, Node.js, Claude Code/Codex CLI
+./first_setup.sh          # One-time: installs tmux, Node.js, Codex CLI (Claude optional)
 ./shutsujin_departure.sh  # Deploy your army
 ```
 

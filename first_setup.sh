@@ -46,7 +46,7 @@ cd "$SCRIPT_DIR"
 
 # 設定ファイルを読み取り（codex/claude 切替）
 SETTINGS_FILE="$SCRIPT_DIR/config/settings.yaml"
-AGENT_SETTING="claude"
+AGENT_SETTING="codex"
 CODEX_BINARY_PATH=""
 CODEX_BUILD_PATH=""
 
@@ -69,12 +69,18 @@ resolve_config_path() {
 }
 
 if [ -f "$SETTINGS_FILE" ]; then
-    AGENT_SETTING=$(grep "^agent:" "$SETTINGS_FILE" 2>/dev/null | awk '{print $2}' || echo "claude")
+    AGENT_SETTING=$(grep "^agent:" "$SETTINGS_FILE" 2>/dev/null | awk '{print $2}' || echo "codex")
     CODEX_BINARY_PATH=$(awk -F': ' '/^  binary_path:/{print $2; exit}' "$SETTINGS_FILE")
     CODEX_BUILD_PATH=$(awk -F': ' '/^  build_path:/{print $2; exit}' "$SETTINGS_FILE")
 fi
 if [ -z "$AGENT_SETTING" ]; then
-    AGENT_SETTING="claude"
+    AGENT_SETTING="codex"
+fi
+
+if [ "$AGENT_SETTING" = "codex" ]; then
+    DEFAULT_SKILL_PATH="~/.codex/skills/"
+else
+    DEFAULT_SKILL_PATH="~/.claude/skills/"
 fi
 
 resolve_codex_cmd() {
@@ -339,51 +345,99 @@ else
 fi
 
 # ============================================================
-# STEP 5: Claude Code CLI チェック
+# STEP 5: CLI チェック
 # ============================================================
-log_step "STEP 5: Claude Code CLI チェック"
+if [ "$AGENT_SETTING" = "codex" ]; then
+    log_step "STEP 5: Codex CLI チェック"
 
-if command -v claude &> /dev/null; then
-    # バージョン取得を試みる
-    CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
-    log_success "Claude Code CLI がインストール済みです"
-    log_info "バージョン: $CLAUDE_VERSION"
-    RESULTS+=("Claude Code CLI: OK")
-else
-    log_warn "Claude Code CLI がインストールされていません"
-    echo ""
-
-    if command -v npm &> /dev/null; then
-        echo "  インストールコマンド:"
-        echo "     npm install -g @anthropic-ai/claude-code"
+    CODEX_CMD=$(resolve_codex_cmd)
+    if [ -n "$CODEX_CMD" ]; then
+        log_success "Codex CLI が見つかりました"
+        log_info "コマンド: $CODEX_CMD"
+        RESULTS+=("Codex CLI: OK")
+    else
+        log_warn "Codex CLI が見つかりません"
         echo ""
-        if [ ! -t 0 ]; then
-            REPLY="Y"
-        else
-            read -p "  今すぐインストールしますか? [Y/n]: " REPLY
-        fi
-        REPLY=${REPLY:-Y}
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            log_info "Claude Code CLI をインストール中..."
-            npm install -g @anthropic-ai/claude-code
+        echo "  インストール/ビルド方法:"
+        echo "     npm install -g @openai/codex"
+        echo "     (または) cd codex/codex-rs && cargo build --release"
+        echo ""
 
-            if command -v claude &> /dev/null; then
-                log_success "Claude Code CLI インストール完了"
-                RESULTS+=("Claude Code CLI: インストール完了")
+        if command -v npm &> /dev/null; then
+            if [ ! -t 0 ]; then
+                REPLY="Y"
             else
-                log_error "インストールに失敗しました。パスを確認してください"
-                RESULTS+=("Claude Code CLI: インストール失敗")
+                read -p "  npm で Codex CLI を今すぐインストールしますか? [Y/n]: " REPLY
+            fi
+            REPLY=${REPLY:-Y}
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                log_info "Codex CLI をインストール中..."
+                npm install -g @openai/codex
+
+                if command -v codex &> /dev/null; then
+                    log_success "Codex CLI インストール完了"
+                    RESULTS+=("Codex CLI: インストール完了")
+                else
+                    log_error "インストールに失敗しました。パスを確認してください"
+                    RESULTS+=("Codex CLI: インストール失敗")
+                    HAS_ERROR=true
+                fi
+            else
+                log_warn "インストールをスキップしました"
+                RESULTS+=("Codex CLI: 未インストール (スキップ)")
                 HAS_ERROR=true
             fi
         else
-            log_warn "インストールをスキップしました"
-            RESULTS+=("Claude Code CLI: 未インストール (スキップ)")
+            echo "  npm がインストールされていないため、先に Node.js をインストールしてください"
+            RESULTS+=("Codex CLI: 未インストール (npm必要)")
             HAS_ERROR=true
         fi
+    fi
+else
+    log_step "STEP 5: Claude Code CLI チェック"
+
+    if command -v claude &> /dev/null; then
+        # バージョン取得を試みる
+        CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
+        log_success "Claude Code CLI がインストール済みです"
+        log_info "バージョン: $CLAUDE_VERSION"
+        RESULTS+=("Claude Code CLI: OK")
     else
-        echo "  npm がインストールされていないため、先に Node.js をインストールしてください"
-        RESULTS+=("Claude Code CLI: 未インストール (npm必要)")
-        HAS_ERROR=true
+        log_warn "Claude Code CLI がインストールされていません"
+        echo ""
+
+        if command -v npm &> /dev/null; then
+            echo "  インストールコマンド:"
+            echo "     npm install -g @anthropic-ai/claude-code"
+            echo ""
+            if [ ! -t 0 ]; then
+                REPLY="Y"
+            else
+                read -p "  今すぐインストールしますか? [Y/n]: " REPLY
+            fi
+            REPLY=${REPLY:-Y}
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                log_info "Claude Code CLI をインストール中..."
+                npm install -g @anthropic-ai/claude-code
+
+                if command -v claude &> /dev/null; then
+                    log_success "Claude Code CLI インストール完了"
+                    RESULTS+=("Claude Code CLI: インストール完了")
+                else
+                    log_error "インストールに失敗しました。パスを確認してください"
+                    RESULTS+=("Claude Code CLI: インストール失敗")
+                    HAS_ERROR=true
+                fi
+            else
+                log_warn "インストールをスキップしました"
+                RESULTS+=("Claude Code CLI: 未インストール (スキップ)")
+                HAS_ERROR=true
+            fi
+        else
+            echo "  npm がインストールされていないため、先に Node.js をインストールしてください"
+            RESULTS+=("Claude Code CLI: 未インストール (npm必要)")
+            HAS_ERROR=true
+        fi
     fi
 fi
 
@@ -438,6 +492,9 @@ if [ ! -f "$SCRIPT_DIR/config/settings.yaml" ]; then
     cat > "$SCRIPT_DIR/config/settings.yaml" << EOF
 # multi-agent-shogun 設定ファイル
 
+# 使用するAIエージェント (codex | claude)
+agent: ${AGENT_SETTING}
+
 # 言語設定
 # ja: 日本語（戦国風日本語のみ、併記なし）
 # en: 英語（戦国風日本語 + 英訳併記）
@@ -452,7 +509,7 @@ shell: bash
 # スキル設定
 skill:
   # スキル保存先（スキル名に shogun- プレフィックスを付けて保存）
-  save_path: "~/.claude/skills/"
+  save_path: "${DEFAULT_SKILL_PATH}"
 
   # ローカルスキル保存先（このプロジェクト専用）
   local_path: "$SCRIPT_DIR/skills/"

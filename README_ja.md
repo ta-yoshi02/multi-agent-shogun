@@ -186,8 +186,8 @@ wsl --install
 | スクリプト | 用途 | 実行タイミング |
 |-----------|------|---------------|
 | `install.bat` | Windows: WSL2 + Ubuntu のセットアップ | 初回のみ |
-| `first_setup.sh` | tmux、Node.js、Claude Code/Codex CLI のインストール + Memory MCP設定 | 初回のみ |
-| `shutsujin_departure.sh` | tmuxセッション作成 + Claude Code/Codex起動 + 指示書読み込み | 毎日 |
+| `first_setup.sh` | tmux、Node.js、Codex CLI のインストール + Memory MCP設定（Claudeは任意） | 初回のみ |
+| `shutsujin_departure.sh` | tmuxセッション作成 + Codex起動（agent設定でClaudeも可） + 指示書読み込み | 毎日 |
 
 ### `install.bat` が自動で行うこと：
 - ✅ WSL2がインストールされているかチェック（未インストールなら案内）
@@ -196,7 +196,7 @@ wsl --install
 
 ### `shutsujin_departure.sh` が行うこと：
 - ✅ tmuxセッションを作成（shogun + multiagent）
-- ✅ 全エージェントでClaude CodeまたはCodexを起動
+- ✅ 全エージェントでCodexを起動（agent設定でClaudeも可）
 - ✅ 各エージェントに指示書を自動読み込み
 - ✅ キューファイルをリセットして新しい状態に
 
@@ -216,9 +216,9 @@ wsl --install
 | WSL2 + Ubuntu | PowerShellで `wsl --install` | Windowsのみ |
 | Ubuntuをデフォルトに設定 | `wsl --set-default Ubuntu` | スクリプトの動作に必要 |
 | tmux | `sudo apt install tmux` | ターミナルマルチプレクサ |
-| Node.js v20+ | `nvm install 20` | Claude Code/Codex CLIに必要 |
-| Claude Code CLI | `npm install -g @anthropic-ai/claude-code` | Anthropic公式CLI |
-| Codex CLI（任意） | `npm install -g @openai/codex` | `config/settings.yaml` → `agent: codex` で使用 |
+| Node.js v20+ | `nvm install 20` | Codex CLIに必要 |
+| Codex CLI | `npm install -g @openai/codex` | デフォルト |
+| Claude Code CLI（任意） | `npm install -g @anthropic-ai/claude-code` | `config/settings.yaml` → `agent: claude` で使用 |
 
 </details>
 

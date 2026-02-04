@@ -38,7 +38,7 @@ multi-agent-shogunシステムをClaude Codeのみならず、OpenAI Codexも使
 
 ## 使用方法
 
-### Codexを使用する場合
+### Codexを使用する場合（デフォルト）
 
 1. **設定ファイルを編集**
    ```yaml
@@ -57,12 +57,12 @@ multi-agent-shogunシステムをClaude Codeのみならず、OpenAI Codexも使
    ./shutsujin_departure.sh
    ```
 
-### Claude Codeを使用する場合（デフォルト）
+### Claude Codeを使用する場合（任意）
 
 1. **設定ファイルを確認**
    ```yaml
    # config/settings.yaml
-   agent: claude  # デフォルト
+   agent: claude
    ```
 
 2. **システムを起動**
